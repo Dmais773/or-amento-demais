@@ -85,7 +85,7 @@
         <div class="form-row">
           <div class="form-group">
             <label for="clienteNome">Cliente</label>
-            <input id="clienteNome" value="CLIENTE TESTE" />
+            <input id="clienteNome" value="" placeholder="Nome do cliente" />
           </div>
           <div class="form-group">
             <label for="clienteEndereco">Endereço do cliente</label>
@@ -112,7 +112,7 @@
         <h3>2. Adicionar item ao orçamento</h3>
         <div class="form-group">
           <label for="ambiente">Ambiente</label>
-          <input id="ambiente" list="ambientesLista" value="GARAGEM" />
+          <input id="ambiente" list="ambientesLista" value="" placeholder="Ex: GARAGEM, SALA, COZINHA" />
           <datalist id="ambientesLista">
             <option value="GARAGEM"></option>
             <option value="BEIRA FACHADA"></option>
@@ -140,7 +140,7 @@
           </div>
           <div class="form-group">
             <label for="precoUnitario">Preço unitário editável</label>
-            <input id="precoUnitario" type="number" min="0" step="0.01" value="0" />
+            <input id="precoUnitario" type="number" min="0" step="0.01" value="0.00" />
           </div>
         </div>
         <div class="button-row item-main-actions">
@@ -181,7 +181,7 @@
         <div class="form-group">
           <label for="novoProdutoImagem">Imagem do produto</label>
           <input id="novoProdutoImagem" type="file" accept="image/*" />
-          <p class="small-note">Nesta versão, as imagens pequenas ficam salvas junto do produto no Firestore. Como o Storage não foi ativado, evite imagens pesadas.</p>
+          <p class="small-note">Nesta versão, imagens pequenas podem ser salvas junto do produto no Firestore. Como o Storage não foi ativado, evite imagens pesadas.</p>
         </div>
         <div class="button-row">
           <button class="btn-success" id="salvarProduto">Salvar produto</button>
@@ -245,7 +245,7 @@
           <div class="report-info-grid">
             <div class="info-card wide">
               <span>Cliente</span>
-              <strong id="outClienteNome">CLIENTE TESTE</strong>
+              <strong id="outClienteNome">NÃO INFORMADO</strong>
               <small>Endereço: <span id="outClienteEndereco"></span></small>
             </div>
             <div class="info-card">

@@ -34,8 +34,11 @@ const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
 
-const STORAGE_ITEMS = "dmais_orcamento_itens_v3_zerado";
-const STORAGE_FIELDS = "dmais_orcamento_campos_v3_zerado";
+const DEFAULT_PRODUCTS = [];
+const DEFAULT_ITEMS = [];
+
+const STORAGE_ITEMS = "orcamento_dmais_itens_v12_zerado_total";
+const STORAGE_FIELDS = "orcamento_dmais_campos_v12_zerado_total";
 const FIELD_IDS = [
   "empresaNome", "empresaRazao", "empresaCnpj", "empresaIe", "empresaCidade",
   "empresaTelefone", "empresaEndereco", "clienteNome", "clienteEndereco",
@@ -180,8 +183,8 @@ function loadDraftLocal() {
 async function loadProductsFromFirestore() {
   const snap = await getDocs(query(produtosCol(), orderBy("nome")));
 
-  // Versão zerada: não cria produtos de exemplo automaticamente.
-  // Cada conta começa vazia e o cliente cadastra os próprios equipamentos.
+  // Versão zerada: não cria equipamentos de exemplo automaticamente.
+  // Cada conta começa vazia e os equipamentos cadastrados ficam salvos no Firestore da própria conta.
   produtos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
@@ -310,14 +313,10 @@ function getSearchResults(term, limitCount = 12) {
 }
 
 function renderProductOptions() {
-  const selected = getProduct($("produtoSelect").value) || produtos[0];
-  if (selected) {
-    selectProduct(selected.id, false);
-  } else {
-    $("produtoBusca").value = "";
-    $("produtoSelect").value = "";
-    updateSelectedProduct();
-  }
+  $("produtoBusca").value = "";
+  $("produtoSelect").value = "";
+  $("precoUnitario").value = "0.00";
+  updateSelectedProduct();
 }
 
 function renderProductSuggestions(term) {
@@ -397,31 +396,511 @@ async function deleteSelectedProduct() {
 
   const usedCount = itens.filter((item) => item.produtoId === product.id).length;
   const usedWarning = usedCount
-    ? `\n\nEsse equipamento aparece em ${usedCount} item(ns) do orçamento atual. A exclusão remove o equipamento do cadastro, mas não apaga os itens já adicionados neste orçamento.`
+    ? `\n\nEsse equipamento aparece em ${usedCount} item(ns) do orçamento atual. A exclusão remove o equipamento do cadastro, mas não apaga os itens já adicionados no orçamento.`
     : "";
 
-  const confirmed = confirm(
-    `Deseja excluir definitivamente este equipamento do cadastro?\n\n${product.nome}${usedWarning}\n\nDepois de excluir, ele não será recriado automaticamente ao fazer login.`
-  );
+  const confirmed = confirm(`Deseja realmente excluir o equipamento:\n\n${product.nome}?${usedWarning}`);
   if (!confirmed) return;
 
   try {
-    setStatus("Excluindo equipamento do Firebase...", "info");
+    setStatus("Excluindo equipamento...", "info");
     await deleteDoc(doc(produtosCol(), product.id));
 
     produtos = produtos.filter((p) => p.id !== product.id);
-    $("produtoBusca").value = "";
-    $("produtoSelect").value = "";
-    $("precoUnitario").value = "0.00";
     hideProductSuggestions();
-    updateSelectedProduct();
+
+    if (produtos.length) {
+      selectProduct(produtos[0].id, false);
+    } else {
+      $("produtoBusca").value = "";
+      $("produtoSelect").value = "";
+      $("precoUnitario").value = "0.00";
+      updateSelectedProduct();
+    }
 
     renderAll();
-    setStatus("Equipamento excluído definitivamente do cadastro.", "success");
+    setStatus("Equipamento excluído do cadastro.", "success");
   } catch (error) {
     console.error(error);
     setStatus(friendlyFirebaseError(error), "error");
     alert(friendlyFirebaseError(error));
+  }
+}
+
+function addItem() {
+  const product = getProduct($("produtoSelect").value);
+  if (!product) return alert("Digite e selecione um equipamento da lista antes de adicionar.");
+
+  const ambiente = normalizeText($("ambiente").value);
+  const quantidade = onlyNumber($("quantidade").value);
+  const preco = onlyNumber($("precoUnitario").value);
+
+  if (!ambiente) return alert("Informe o ambiente.");
+  if (quantidade <= 0) return alert("Informe uma quantidade maior que zero.");
+
+  itens.push({
+    id: newId("item"),
+    ambiente,
+    produtoId: product.id,
+    nome: product.nome,
+    unidade: product.unidade,
+    imagem: product.imagem,
+    quantidade,
+    preco
+  });
+
+  loadedQuoteId = null;
+  saveDraftLocal();
+  renderAll();
+}
+
+function deleteItem(id) {
+  if (editingItemId === id) editingItemId = null;
+  itens = itens.filter((item) => item.id !== id);
+  loadedQuoteId = null;
+  saveDraftLocal();
+  renderAll();
+}
+
+function getGroupedItems() {
+  const grouped = new Map();
+  itens.forEach((raw) => {
+    const item = hydrateItem(raw);
+    if (!grouped.has(item.ambiente)) grouped.set(item.ambiente, []);
+    grouped.get(item.ambiente).push(item);
+  });
+  return grouped;
+}
+
+function flattenGroupedItems(grouped) {
+  const flattened = [];
+  grouped.forEach((envItems) => envItems.forEach((item) => flattened.push(item)));
+  return flattened;
+}
+
+function reorderItemInSameEnvironment(draggedId, targetId, insertAfter = false) {
+  if (!draggedId || !targetId || draggedId === targetId) return;
+
+  const grouped = getGroupedItems();
+  let changed = false;
+
+  grouped.forEach((envItems) => {
+    if (changed) return;
+    const draggedIndex = envItems.findIndex((item) => item.id === draggedId);
+    const targetIndexOriginal = envItems.findIndex((item) => item.id === targetId);
+    if (draggedIndex === -1 || targetIndexOriginal === -1) return;
+
+    const [draggedItem] = envItems.splice(draggedIndex, 1);
+    const targetIndex = envItems.findIndex((item) => item.id === targetId);
+    if (targetIndex === -1) return;
+
+    envItems.splice(insertAfter ? targetIndex + 1 : targetIndex, 0, draggedItem);
+    changed = true;
+  });
+
+  if (!changed) return;
+  itens = flattenGroupedItems(grouped);
+  loadedQuoteId = null;
+  saveDraftLocal();
+  renderAll();
+}
+
+function setupDragAndDrop() {
+  const lines = document.querySelectorAll(".item-line[draggable='true']");
+  lines.forEach((line) => {
+    line.addEventListener("dragstart", (event) => {
+      draggedItemId = line.dataset.itemId;
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", draggedItemId);
+      line.classList.add("dragging");
+    });
+
+    line.addEventListener("dragend", () => {
+      draggedItemId = null;
+      line.classList.remove("dragging");
+      document.querySelectorAll(".item-line.drag-over-before, .item-line.drag-over-after")
+        .forEach((el) => el.classList.remove("drag-over-before", "drag-over-after"));
+    });
+
+    line.addEventListener("dragover", (event) => {
+      const draggedId = draggedItemId || event.dataTransfer.getData("text/plain");
+      if (!draggedId || draggedId === line.dataset.itemId) return;
+      const draggedItem = itens.find((item) => item.id === draggedId);
+      if (!draggedItem || draggedItem.ambiente !== line.dataset.ambiente) return;
+
+      event.preventDefault();
+      const rect = line.getBoundingClientRect();
+      const insertAfter = event.clientY > rect.top + rect.height / 2;
+      line.classList.toggle("drag-over-before", !insertAfter);
+      line.classList.toggle("drag-over-after", insertAfter);
+    });
+
+    line.addEventListener("dragleave", () => {
+      line.classList.remove("drag-over-before", "drag-over-after");
+    });
+
+    line.addEventListener("drop", (event) => {
+      event.preventDefault();
+      const draggedId = draggedItemId || event.dataTransfer.getData("text/plain");
+      const targetId = line.dataset.itemId;
+      const rect = line.getBoundingClientRect();
+      const insertAfter = event.clientY > rect.top + rect.height / 2;
+      reorderItemInSameEnvironment(draggedId, targetId, insertAfter);
+    });
+  });
+}
+
+function startEditItem(id) {
+  editingItemId = id;
+  renderItemsList();
+}
+
+function cancelEditItem() {
+  editingItemId = null;
+  renderItemsList();
+}
+
+function makeSafeId(value) {
+  return String(value || "").replace(/[^a-zA-Z0-9_-]/g, "_");
+}
+
+function saveEditItem(id) {
+  const item = itens.find((item) => item.id === id);
+  if (!item) return;
+
+  const safeId = makeSafeId(id);
+  const ambiente = normalizeText($("editAmbiente_" + safeId)?.value || item.ambiente);
+  const quantidade = onlyNumber($("editQuantidade_" + safeId)?.value);
+  const preco = onlyNumber($("editPreco_" + safeId)?.value);
+
+  if (!ambiente) return alert("Informe o ambiente.");
+  if (quantidade <= 0) return alert("Informe uma quantidade maior que zero.");
+  if (preco < 0) return alert("Informe um preço válido.");
+
+  item.ambiente = ambiente;
+  item.quantidade = quantidade;
+  item.preco = preco;
+
+  editingItemId = null;
+  loadedQuoteId = null;
+  saveDraftLocal();
+  renderAll();
+}
+
+function renderItemsList() {
+  const list = $("listaItens");
+  if (!itens.length) {
+    list.innerHTML = `<div class="items-list-header">Nenhum item adicionado ainda.</div>`;
+    return;
+  }
+
+  const grouped = getGroupedItems();
+  let html = `<div class="items-list-header drag-header"><div>Itens organizados por ambiente</div><div>Total</div><div>Ações</div></div>`;
+
+  grouped.forEach((envItems, ambiente) => {
+    const subtotal = envItems.reduce((sum, item) => sum + item.quantidade * item.preco, 0);
+    html += `
+      <div class="sector-title">
+        <span>${escapeHtml(ambiente)}</span>
+        <small>Subtotal: ${toMoney(subtotal)}</small>
+      </div>
+      <div class="drag-tip">Arraste os itens deste ambiente para mudar a ordem. Clique em editar para alterar quantidade, preço ou ambiente.</div>
+    `;
+
+    envItems.forEach((item) => {
+      const safeId = makeSafeId(item.id);
+
+      if (editingItemId === item.id) {
+        html += `
+          <div class="item-line item-line-editing" data-item-id="${escapeHtml(item.id)}" data-ambiente="${escapeHtml(item.ambiente)}">
+            <div class="edit-item-title">
+              <strong>${escapeHtml(item.nome)}</strong>
+              <span>Total atual: ${toMoney(item.quantidade * item.preco)}</span>
+            </div>
+            <div class="edit-grid">
+              <label>Ambiente<input id="editAmbiente_${safeId}" value="${escapeHtml(item.ambiente)}" list="ambientesLista" /></label>
+              <label>Quantidade<input id="editQuantidade_${safeId}" type="number" min="0" step="1" value="${item.quantidade}" /></label>
+              <label>Preço unitário<input id="editPreco_${safeId}" type="number" min="0" step="0.01" value="${Number(item.preco).toFixed(2)}" /></label>
+            </div>
+            <div class="edit-actions">
+              <button class="btn-success" type="button" onclick="saveEditItem('${item.id}')">Salvar</button>
+              <button class="btn-secondary" type="button" onclick="cancelEditItem()">Cancelar</button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      html += `
+        <div class="item-line" draggable="true" data-item-id="${escapeHtml(item.id)}" data-ambiente="${escapeHtml(item.ambiente)}">
+          <div class="drag-handle" title="Arrastar item">☰</div>
+          <div class="item-info">
+            <strong>${item.quantidade} ${escapeHtml(item.unidade)} - ${escapeHtml(item.nome)}</strong>
+            <span>${toMoney(item.preco)} cada</span>
+          </div>
+          <div class="item-total">${toMoney(item.quantidade * item.preco)}</div>
+          <button class="btn-edit" title="Editar quantidade/preço" onclick="startEditItem('${item.id}')">✎</button>
+          <button class="btn-danger" title="Remover" onclick="deleteItem('${item.id}')">×</button>
+        </div>
+      `;
+    });
+  });
+
+  list.innerHTML = html;
+  setupDragAndDrop();
+}
+
+function renderQuote() {
+  const setText = (id, value) => {
+    const el = $(id);
+    if (el) el.textContent = value || "";
+  };
+
+  setText("outEmpresaNome", $("empresaNome").value || "");
+  setText("outEmpresaRazao", $("empresaRazao").value || "");
+  setText("outEmpresaEndereco", $("empresaEndereco").value || "");
+  setText("outEmpresaCidade", $("empresaCidade").value || "");
+  setText("outEmpresaCnpj", $("empresaCnpj").value || "");
+  setText("outEmpresaIe", $("empresaIe").value || "");
+  setText("outEmpresaTelefone", $("empresaTelefone").value || "");
+  setText("outClienteNome", $("clienteNome").value || "");
+  setText("outClienteEndereco", $("clienteEndereco").value || "Não informado");
+  setText("outPagamento", $("pagamento").value || "");
+  setText("outCondicaoPagamento", $("pagamento").value || "");
+  setText("outValidade", $("validade").value || "");
+  setText("outValidadeResumo", $("validade").value || "");
+  setText("outEntrega", $("entrega").value || "");
+  setText("outEntregaResumo", $("entrega").value || "");
+
+  const observacao = ($("observacaoGeral")?.value || "").trim();
+  const observacaoBox = $("outObservacaoBox");
+  const observacaoTexto = $("outObservacaoGeral");
+  if (observacaoBox && observacaoTexto) {
+    observacaoTexto.textContent = observacao;
+    observacaoBox.classList.toggle("hidden-print-block", !observacao);
+  }
+
+  const body = $("orcamentoBody");
+  const summaryBox = $("outResumoAmbientes");
+  const grouped = getGroupedItems();
+  let html = "";
+  let summaryHtml = "";
+  let totalGeral = 0;
+  let totalItens = 0;
+
+  if (!itens.length) {
+    html = `<div class="empty-report">Adicione itens no painel ao lado ou carregue o exemplo para montar a proposta.</div>`;
+    summaryHtml = `<div class="summary-empty">Nenhum ambiente adicionado ainda.</div>`;
+  } else {
+    grouped.forEach((envItems, ambiente) => {
+      let subtotal = 0;
+      totalItens += envItems.length;
+
+      const rows = envItems.map((item) => {
+        const total = item.quantidade * item.preco;
+        subtotal += total;
+        totalGeral += total;
+        return `
+          <tr>
+            <td class="col-img"><img src="${item.imagem}" alt="${escapeHtml(item.nome)}" /></td>
+            <td class="col-desc">
+              <strong>${escapeHtml(item.nome)}</strong>
+              <span>${escapeHtml(item.unidade)} · ${item.quantidade} unidade(s)</span>
+            </td>
+            <td class="col-qty">${item.quantidade}</td>
+            <td class="col-unit">${escapeHtml(item.unidade)}</td>
+            <td class="col-price">${toMoney(item.preco)}</td>
+            <td class="col-total">${toMoney(total)}</td>
+          </tr>
+        `;
+      }).join("");
+
+      summaryHtml += `
+        <div class="summary-card">
+          <span>${escapeHtml(ambiente)}</span>
+          <strong>${toMoney(subtotal)}</strong>
+          <small>${envItems.length} item(ns)</small>
+        </div>
+      `;
+
+      html += `
+        <section class="environment-card">
+          <div class="environment-card-head">
+            <div>
+              <span>Ambiente</span>
+              <h3>${escapeHtml(ambiente)}</h3>
+            </div>
+            <div class="environment-subtotal">
+              <span>Subtotal</span>
+              <strong>${toMoney(subtotal)}</strong>
+            </div>
+          </div>
+          <table class="premium-table">
+            <thead>
+              <tr>
+                <th class="col-img">Imagem</th>
+                <th class="col-desc">Descrição</th>
+                <th class="col-qty">Quant.</th>
+                <th class="col-unit">Un.</th>
+                <th class="col-price">Vlr unit.</th>
+                <th class="col-total">Vlr total</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </section>
+      `;
+    });
+  }
+
+  body.innerHTML = html;
+  if (summaryBox) summaryBox.innerHTML = summaryHtml;
+  setText("outTotalGeral", toMoney(totalGeral));
+  setText("outTotalGeralResumo", toMoney(totalGeral));
+  updatePageNumbers();
+}
+
+
+function printQuote() {
+  // Garante que campos digitados, como a observação geral, entrem na área do PDF antes da impressão.
+  renderQuote();
+  saveDraftLocal();
+  setTimeout(() => window.print(), 80);
+}
+
+window.addEventListener("beforeprint", () => {
+  renderQuote();
+});
+
+function updatePageNumbers() {
+  const pages = Array.from(document.querySelectorAll("#quotePage .report-page"));
+  const total = pages.length;
+  pages.forEach((page, index) => {
+    let marker = page.querySelector(".page-number");
+    if (!marker) {
+      marker = document.createElement("div");
+      marker.className = "page-number";
+      page.appendChild(marker);
+    }
+    marker.textContent = `Página ${index + 1} de ${total}`;
+  });
+}
+
+function renderAll() {
+  itens = itens.map(hydrateItem);
+  renderItemsList();
+  renderQuote();
+  renderHistory();
+}
+
+function loadExample() {
+  itens = DEFAULT_ITEMS.map((item) => {
+    const product = getProduct(item.produtoId);
+    return {
+      id: newId("item"),
+      ambiente: item.ambiente,
+      produtoId: item.produtoId,
+      nome: product?.nome,
+      unidade: product?.unidade,
+      imagem: product?.imagem,
+      quantidade: item.quantidade,
+      preco: item.preco
+    };
+  });
+  loadedQuoteId = null;
+  saveDraftLocal();
+  renderAll();
+}
+
+function clearQuote() {
+  if (!confirm("Deseja limpar todos os itens do orçamento?")) return;
+  itens = [];
+  loadedQuoteId = null;
+  saveDraftLocal();
+  renderAll();
+}
+
+function newQuote() {
+  if (itens.length && !confirm("Criar um novo orçamento? O orçamento atual só ficará no histórico se você já tiver salvado.")) return;
+  itens = [];
+  loadedQuoteId = null;
+  $("clienteNome").value = "";
+  $("clienteEndereco").value = "";
+  $("observacaoGeral").value = "";
+  saveDraftLocal();
+  renderAll();
+  setStatus("Novo orçamento iniciado.", "info");
+}
+
+function readImageAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve("assets/img/sem_imagem.svg");
+    if (file.size > 500 * 1024) {
+      return reject(new Error("A imagem é muito pesada. Use uma imagem menor que 500 KB nesta versão."));
+    }
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function saveProduct() {
+  const nome = normalizeText($("novoProdutoNome").value);
+  const unidade = normalizeText($("novoProdutoUnidade").value || "UND");
+  const preco = onlyNumber($("novoProdutoPreco").value);
+  const file = $("novoProdutoImagem").files[0];
+
+  if (!currentUser) return alert("Faça login para cadastrar produto.");
+  if (!nome) return alert("Informe o nome do produto.");
+  if (preco <= 0) return alert("Informe o preço unitário.");
+
+  try {
+    const imagem = await readImageAsDataUrl(file);
+    const novoProduto = { id: newId("produto"), nome, unidade, preco, imagem };
+    await setDoc(doc(produtosCol(), novoProduto.id), {
+      ...novoProduto,
+      criadoEm: serverTimestamp(),
+      atualizadoEm: serverTimestamp()
+    });
+
+    produtos.push(novoProduto);
+    produtos.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+    $("novoProdutoNome").value = "";
+    $("novoProdutoPreco").value = "";
+    $("novoProdutoImagem").value = "";
+
+    selectProduct(novoProduto.id);
+    renderAll();
+    setStatus("Produto salvo no Firestore.", "success");
+  } catch (error) {
+    console.error(error);
+    alert(error.message || friendlyFirebaseError(error));
+    setStatus(error.message || friendlyFirebaseError(error), "error");
+  }
+}
+
+async function resetProducts() {
+  if (!currentUser) return;
+  if (!confirm("Restaurar a lista original de produtos? Os produtos cadastrados por você serão removidos.")) return;
+
+  try {
+    setStatus("Restaurando produtos...", "info");
+    const snap = await getDocs(produtosCol());
+    await Promise.all(snap.docs.map((d) => deleteDoc(doc(produtosCol(), d.id))));
+    await Promise.all(DEFAULT_PRODUCTS.map((p) => setDoc(doc(produtosCol(), p.id), {
+      ...p,
+      criadoEm: serverTimestamp(),
+      atualizadoEm: serverTimestamp()
+    })));
+    produtos = [...DEFAULT_PRODUCTS];
+    renderProductOptions();
+    renderAll();
+    setStatus("Produtos restaurados.", "success");
+  } catch (error) {
+    console.error(error);
+    setStatus(friendlyFirebaseError(error), "error");
   }
 }
 
