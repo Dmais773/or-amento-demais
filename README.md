@@ -1,4 +1,4 @@
-# D+ Orçamentos - Versão Firebase
+# Orçamento Dmais - Versão Firebase
 
 Esta versão já tem:
 
@@ -15,7 +15,7 @@ Esta versão já tem:
 
 ## Firebase usado
 
-Projeto: `dmais-orcamento`
+Projeto: `orcamento-dmais`
 
 Regras esperadas no Firestore:
 

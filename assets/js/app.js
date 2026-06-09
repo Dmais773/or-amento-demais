@@ -22,12 +22,12 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBTjRaD-XcSggXD0LHz3h8rz7zzO6icjZs",
-  authDomain: "dmais-orcamento.firebaseapp.com",
-  projectId: "dmais-orcamento",
-  storageBucket: "dmais-orcamento.firebasestorage.app",
-  messagingSenderId: "354160490922",
-  appId: "1:354160490922:web:d49ae00fd3ba65465353d3"
+  apiKey: "AIzaSyDO6Cz65ejgCEDEVXzdeM-JFrQ69UQgBNg",
+  authDomain: "orcamento-dmais.firebaseapp.com",
+  projectId: "orcamento-dmais",
+  storageBucket: "orcamento-dmais.firebasestorage.app",
+  messagingSenderId: "927295167091",
+  appId: "1:927295167091:web:dbb31be5a35012bfa4e806"
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
