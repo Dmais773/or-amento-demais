@@ -62,8 +62,8 @@ const DEFAULT_ITEMS = [
   { ambiente: "SALA - SUÍTE E QUARTOS", produtoId: "p10", quantidade: 1, preco: 69.90 }
 ];
 
-const STORAGE_ITEMS = "dmais_orcamento_itens_v2";
-const STORAGE_FIELDS = "dmais_orcamento_campos_v2";
+const STORAGE_ITEMS = "dmais_orcamento_itens_v3_zerado";
+const STORAGE_FIELDS = "dmais_orcamento_campos_v3_zerado";
 const FIELD_IDS = [
   "empresaNome", "empresaRazao", "empresaCnpj", "empresaIe", "empresaCidade",
   "empresaTelefone", "empresaEndereco", "clienteNome", "clienteEndereco",
@@ -180,7 +180,7 @@ function hydrateItem(item) {
     id: item.id || newId("item"),
     nome: item.nome || product?.nome || "PRODUTO REMOVIDO",
     unidade: item.unidade || product?.unidade || "UND",
-    imagem: item.imagem || product?.imagem || "assets/img/spot_duplo_preto.svg",
+    imagem: item.imagem || product?.imagem || "assets/img/sem_imagem.svg",
     preco: onlyNumber(item.preco ?? product?.preco)
   };
 }
@@ -208,16 +208,8 @@ function loadDraftLocal() {
 async function loadProductsFromFirestore() {
   const snap = await getDocs(query(produtosCol(), orderBy("nome")));
 
-  if (snap.empty) {
-    await Promise.all(DEFAULT_PRODUCTS.map((p) => setDoc(doc(produtosCol(), p.id), {
-      ...p,
-      criadoEm: serverTimestamp(),
-      atualizadoEm: serverTimestamp()
-    })));
-    produtos = [...DEFAULT_PRODUCTS];
-    return;
-  }
-
+  // Versão zerada: não cria produtos de exemplo automaticamente.
+  // Cada conta começa vazia e o cliente cadastra os próprios equipamentos.
   produtos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
@@ -726,7 +718,7 @@ function renderQuote() {
   let totalItens = 0;
 
   if (!itens.length) {
-    html = `<div class="empty-report">Adicione itens no painel ao lado ou carregue o exemplo para montar a proposta.</div>`;
+    html = `<div class="empty-report">Cadastre ou selecione equipamentos no painel ao lado para montar a proposta.</div>`;
     summaryHtml = `<div class="summary-empty">Nenhum ambiente adicionado ainda.</div>`;
   } else {
     grouped.forEach((envItems, ambiente) => {
@@ -871,7 +863,7 @@ function newQuote() {
 
 function readImageAsDataUrl(file) {
   return new Promise((resolve, reject) => {
-    if (!file) return resolve("assets/img/spot_duplo_preto.svg");
+    if (!file) return resolve("assets/img/sem_imagem.svg");
     if (file.size > 500 * 1024) {
       return reject(new Error("A imagem é muito pesada. Use uma imagem menor que 500 KB nesta versão."));
     }
@@ -918,28 +910,42 @@ async function saveProduct() {
   }
 }
 
-async function resetProducts() {
-  if (!currentUser) return;
-  if (!confirm("Restaurar a lista original de produtos? Os produtos cadastrados por você serão removidos.")) return;
+async function clearAllProducts() {
+  if (!currentUser) return alert("Faça login para zerar os equipamentos.");
+
+  const firstConfirm = confirm(
+    "Isso vai apagar TODOS os equipamentos cadastrados nesta conta.\n\n" +
+    "Os orçamentos já salvos no histórico não serão apagados, mas a lista de produtos ficará vazia.\n\n" +
+    "Deseja continuar?"
+  );
+  if (!firstConfirm) return;
+
+  const typed = prompt('Para confirmar, digite ZERAR');
+  if (normalizeText(typed) !== "ZERAR") {
+    setStatus("Operação cancelada. Nada foi apagado.", "info");
+    return;
+  }
 
   try {
-    setStatus("Restaurando produtos...", "info");
+    setStatus("Zerando equipamentos da conta...", "info");
     const snap = await getDocs(produtosCol());
     await Promise.all(snap.docs.map((d) => deleteDoc(doc(produtosCol(), d.id))));
-    await Promise.all(DEFAULT_PRODUCTS.map((p) => setDoc(doc(produtosCol(), p.id), {
-      ...p,
-      criadoEm: serverTimestamp(),
-      atualizadoEm: serverTimestamp()
-    })));
-    produtos = [...DEFAULT_PRODUCTS];
-    renderProductOptions();
+
+    produtos = [];
+    $("produtoBusca").value = "";
+    $("produtoSelect").value = "";
+    $("precoUnitario").value = "0.00";
+    hideProductSuggestions();
+    updateSelectedProduct();
     renderAll();
-    setStatus("Produtos restaurados.", "success");
+    setStatus("Equipamentos zerados. Agora cadastre os produtos reais do cliente.", "success");
   } catch (error) {
     console.error(error);
     setStatus(friendlyFirebaseError(error), "error");
+    alert(friendlyFirebaseError(error));
   }
 }
+
 
 function makeFilename() {
   const cliente = normalizeText($("clienteNome").value || "cliente").replace(/[^A-Z0-9]+/g, "_").replace(/^_|_$/g, "").toLowerCase();
@@ -1076,7 +1082,7 @@ function bindEvents() {
   $("limparOrcamento").addEventListener("click", clearQuote);
   $("excluirEquipamentoSelecionado").addEventListener("click", deleteSelectedProduct);
   $("salvarProduto").addEventListener("click", saveProduct);
-  $("resetProdutos").addEventListener("click", resetProducts);
+  $("limparProdutosConta").addEventListener("click", clearAllProducts);
   $("imprimirPdf").addEventListener("click", printQuote);
   $("baixarWord").addEventListener("click", downloadWord);
   $("salvarHistorico").addEventListener("click", saveQuoteToHistory);
@@ -1106,7 +1112,6 @@ async function bootUser(user) {
     loadDraftLocal();
     renderProductOptions();
 
-    if (!itens.length) loadExample();
     await loadHistory();
     renderAll();
     setStatus("Sistema pronto.", "success");
@@ -1135,6 +1140,7 @@ window.startEditItem = startEditItem;
 window.cancelEditItem = cancelEditItem;
 window.saveEditItem = saveEditItem;
 window.deleteSelectedProduct = deleteSelectedProduct;
+window.clearAllProducts = clearAllProducts;
 window.openQuote = openQuote;
 window.duplicateQuote = duplicateQuote;
 window.removeQuote = removeQuote;

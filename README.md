@@ -3,7 +3,7 @@
 Esta versão já tem:
 
 - Login com e-mail e senha usando Firebase Authentication.
-- Produtos salvos por usuário no Firestore.
+- Produtos salvos por usuário no Firestore. Cada conta começa sem produtos de exemplo.
 - Orçamentos salvos por usuário no Firestore.
 - Histórico dos últimos 30 orçamentos de cada conta.
 - Abrir, duplicar e excluir orçamento do histórico.
@@ -95,3 +95,13 @@ Versão com layout visual ajustado para ficar mais próximo da identidade da D+ 
 - Removido o botão “Carregar exemplo” da tela principal.
 - Botão “Excluir equipamento selecionado” movido para abaixo dos botões de ação do item.
 - A exclusão continua exigindo confirmação antes de apagar o equipamento do cadastro.
+
+## Versão zerada para o cliente
+
+Nesta versão, o sistema não cria produtos de exemplo automaticamente.
+
+Cada conta começa vazia e o cliente cadastra os próprios equipamentos com nome, unidade, preço e imagem.
+
+Foi adicionado o botão **Zerar todos os equipamentos**, com confirmação digitando `ZERAR`, para limpar produtos de teste da conta sem apagar os orçamentos já salvos no histórico.
+
+As imagens cadastradas continuam sendo salvas no Firestore em formato base64, dentro do próprio produto. O GitHub não recebe essas imagens.
