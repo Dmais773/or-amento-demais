@@ -102,6 +102,11 @@ Nesta versão, o sistema não cria produtos de exemplo automaticamente.
 
 Cada conta começa vazia e o cliente cadastra os próprios equipamentos com nome, unidade, preço e imagem.
 
-Foi adicionado o botão **Zerar todos os equipamentos**, com confirmação digitando `ZERAR`, para limpar produtos de teste da conta sem apagar os orçamentos já salvos no histórico.
-
 As imagens cadastradas continuam sendo salvas no Firestore em formato base64, dentro do próprio produto. O GitHub não recebe essas imagens.
+
+## Ajuste v11
+
+- Removido o botão “Zerar todos os equipamentos”.
+- A exclusão individual de equipamento agora é o caminho principal: ao confirmar, o produto é apagado definitivamente do Firestore daquela conta.
+- Produtos excluídos não são recriados automaticamente ao fazer login.
+- Após excluir um produto, o campo de equipamento fica vazio para evitar confusão.
