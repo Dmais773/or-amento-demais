@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="160" viewBox="0 0 240 160">
+  <rect width="240" height="160" fill="#f7f7f7"/>
+  <rect x="38" y="45" width="164" height="70" rx="8" fill="#111" stroke="#333" stroke-width="4"/>
+  <circle cx="86" cy="80" r="26" fill="#444" stroke="#000" stroke-width="4"/>
+  <circle cx="86" cy="80" r="18" fill="#f4f4f4"/>
+  <circle cx="154" cy="80" r="26" fill="#444" stroke="#000" stroke-width="4"/>
+  <circle cx="154" cy="80" r="18" fill="#f4f4f4"/>
+  <text x="120" y="142" text-anchor="middle" font-family="Arial" font-size="14" fill="#333">SPOT DUPLO PAR20</text>
+</svg>

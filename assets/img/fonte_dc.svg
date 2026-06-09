@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="160" viewBox="0 0 240 160">
+  <rect width="240" height="160" fill="#f7f7f7"/>
+  <rect x="55" y="58" width="130" height="42" rx="8" fill="#ffffff" stroke="#d3d3d3" stroke-width="4"/>
+  <line x1="185" y1="78" x2="215" y2="78" stroke="#333" stroke-width="4"/>
+  <line x1="25" y1="78" x2="55" y2="78" stroke="#d23" stroke-width="4"/>
+  <text x="120" y="84" text-anchor="middle" font-family="Arial" font-size="16" fill="#777">12V DC</text>
+  <text x="120" y="146" text-anchor="middle" font-family="Arial" font-size="14" fill="#333">FONTE SLIM 12V</text>
+</svg>

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>D+ Orçamentos | D+ Casa Shop</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+  <section class="auth-screen" id="authScreen">
+    <div class="auth-card">
+      <img src="assets/img/logo_mvp.svg" alt="Logo" class="auth-logo" />
+      <div class="auth-kicker">D+ Casa Shop</div>
+      <h1>Gerador de Orçamentos</h1>
+      <p>Entre com e-mail e senha para montar propostas, salvar histórico e organizar seus orçamentos por ambiente.</p>
+
+      <div class="form-group">
+        <label for="authEmail">E-mail</label>
+        <input id="authEmail" type="email" placeholder="seuemail@exemplo.com" autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label for="authSenha">Senha</label>
+        <input id="authSenha" type="password" placeholder="Mínimo 6 caracteres" autocomplete="current-password" />
+      </div>
+      <div class="button-row auth-buttons">
+        <button class="btn-primary" id="loginBtn">Entrar</button>
+        <button class="btn-success" id="criarContaBtn">Criar conta</button>
+        <button class="btn-secondary" id="resetSenhaBtn">Esqueci a senha</button>
+      </div>
+      <div id="authMsg" class="auth-msg"></div>
+      <p class="small-note">Os dados de cada conta ficam separados no Firebase. Cada usuário vê apenas seus próprios orçamentos.</p>
+    </div>
+  </section>
+
+  <main class="app-shell hidden" id="appShell">
+    <aside class="sidebar">
+      <div class="panel-header">
+        <div class="brand-row">
+          <img src="assets/img/logo_mvp.svg" alt="D+ Casa Shop" class="sidebar-logo" />
+          <div>
+            <h1>Gerador de Orçamentos</h1>
+            <p>Monte propostas com imagens, ambientes, subtotal e histórico salvo.</p>
+          </div>
+        </div>
+        <div class="user-box">
+          <span>Logado: <strong id="userEmail">-</strong></span>
+          <button class="btn-secondary btn-small" id="logoutBtn">Sair</button>
+        </div>
+      </div>
+
+      <section class="form-section">
+        <h3>1. Dados do orçamento</h3>
+        <div class="form-group">
+          <label for="empresaNome">Nome da empresa</label>
+          <input id="empresaNome" value="D+ CASA SHOP" />
+        </div>
+        <div class="form-group">
+          <label for="empresaRazao">Razão social / descrição</label>
+          <input id="empresaRazao" value="D MAIS CASA SHOP UTILIDADES E CONST EIRELI" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="empresaCnpj">CNPJ</label>
+            <input id="empresaCnpj" value="41.639.112/0001-74" />
+          </div>
+          <div class="form-group">
+            <label for="empresaIe">Inscr. Est.</label>
+            <input id="empresaIe" value="13.869.179-7" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="empresaCidade">Cidade</label>
+            <input id="empresaCidade" value="CÁCERES - MT" />
+          </div>
+          <div class="form-group">
+            <label for="empresaTelefone">Telefone</label>
+            <input id="empresaTelefone" value="65 - 99938-2720" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="empresaEndereco">Endereço da empresa</label>
+          <input id="empresaEndereco" value="R GENERAL OSÓRIO" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="clienteNome">Cliente</label>
+            <input id="clienteNome" value="CLIENTE TESTE" />
+          </div>
+          <div class="form-group">
+            <label for="clienteEndereco">Endereço do cliente</label>
+            <input id="clienteEndereco" value="" placeholder="Opcional" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pagamento">Forma de pagamento</label>
+            <input id="pagamento" value="À COMBINAR" />
+          </div>
+          <div class="form-group">
+            <label for="validade">Validade da proposta</label>
+            <input id="validade" value="10 DIAS" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="entrega">Entrega</label>
+          <input id="entrega" value="ATÉ DE 25 À 30 DIAS ÚTEIS" />
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h3>2. Adicionar item ao orçamento</h3>
+        <div class="form-group">
+          <label for="ambiente">Ambiente</label>
+          <input id="ambiente" list="ambientesLista" value="GARAGEM" />
+          <datalist id="ambientesLista">
+            <option value="GARAGEM"></option>
+            <option value="BEIRA FACHADA"></option>
+            <option value="SUÍTE"></option>
+            <option value="BANHEIRO E CORREDOR"></option>
+            <option value="SALA"></option>
+            <option value="COZINHA"></option>
+            <option value="QUARTO E LAVANDERIA"></option>
+            <option value="SALA E COZINHA"></option>
+            <option value="SALA - SUÍTE E QUARTOS"></option>
+          </datalist>
+        </div>
+        <div class="form-group product-search-wrap">
+          <label for="produtoBusca">Equipamento</label>
+          <input id="produtoBusca" type="text" placeholder="Digite para buscar o equipamento..." autocomplete="off" />
+          <input id="produtoSelect" type="hidden" />
+          <div id="produtoSugestoes" class="product-suggestions"></div>
+          <p class="small-note">Digite parte do nome do produto e clique na opção desejada.</p>
+        </div>
+        <div id="produtoSelecionado" class="product-selected"></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="quantidade">Quantidade</label>
+            <input id="quantidade" type="number" min="0" step="1" value="1" />
+          </div>
+          <div class="form-group">
+            <label for="precoUnitario">Preço unitário editável</label>
+            <input id="precoUnitario" type="number" min="0" step="0.01" value="0" />
+          </div>
+        </div>
+        <div class="button-row item-main-actions">
+          <button class="btn-primary" id="adicionarItem">Adicionar item</button>
+          <button class="btn-danger" id="limparOrcamento">Limpar orçamento</button>
+        </div>
+        <div class="button-row product-delete-actions">
+          <button class="btn-delete-product-main" id="excluirEquipamentoSelecionado" disabled>Excluir equipamento selecionado</button>
+        </div>
+        <div class="items-list" id="listaItens"></div>
+      </section>
+
+      <section class="form-section observation-section">
+        <h3>3. Observação geral da proposta</h3>
+        <div class="form-group">
+          <label for="observacaoGeral">Texto de observação</label>
+          <textarea id="observacaoGeral" rows="5" placeholder="Ex: Valores sujeitos à disponibilidade de estoque. Instalação não inclusa nesta proposta."></textarea>
+          <p class="small-note">Esse texto aparecerá no PDF na página de condições da proposta.</p>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h3>4. Cadastro rápido de produto</h3>
+        <div class="form-group">
+          <label for="novoProdutoNome">Nome do equipamento</label>
+          <input id="novoProdutoNome" placeholder="Ex: ARANDELA LED PRETA 3000K" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="novoProdutoUnidade">Unidade</label>
+            <input id="novoProdutoUnidade" value="UND" />
+          </div>
+          <div class="form-group">
+            <label for="novoProdutoPreco">Preço unitário</label>
+            <input id="novoProdutoPreco" type="number" step="0.01" placeholder="0.00" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="novoProdutoImagem">Imagem do produto</label>
+          <input id="novoProdutoImagem" type="file" accept="image/*" />
+          <p class="small-note">Nesta versão, imagens pequenas podem ser salvas junto do produto no Firestore. Como o Storage não foi ativado, evite imagens pesadas.</p>
+        </div>
+        <div class="button-row">
+          <button class="btn-success" id="salvarProduto">Salvar produto</button>
+          <button class="btn-secondary" id="resetProdutos">Restaurar produtos do MVP</button>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h3>5. Histórico de orçamentos</h3>
+        <p class="small-note">Mostra os últimos 30 orçamentos salvos nesta conta.</p>
+        <div class="button-row">
+          <button class="btn-primary" id="salvarHistorico">Salvar orçamento atual</button>
+          <button class="btn-outline" id="novoOrcamento">Novo orçamento</button>
+          <button class="btn-secondary" id="recarregarHistorico">Atualizar histórico</button>
+        </div>
+        <div id="syncStatus" class="sync-status"></div>
+        <div id="historicoLista" class="history-list"></div>
+      </section>
+    </aside>
+
+    <section class="preview-area">
+      <div class="preview-toolbar">
+        <button class="btn-primary" id="salvarHistoricoTop">Salvar no histórico</button>
+        <button class="btn-secondary" id="baixarWord">Baixar Word simples</button>
+        <button class="btn-primary" id="imprimirPdf">Imprimir / Salvar PDF</button>
+      </div>
+
+      <div class="quote-page premium-quote" id="quotePage">
+        <section class="report-page report-cover">
+          <div class="report-topbar">
+            <div class="report-brand">
+              <img src="assets/img/logo_mvp.svg" alt="Logo" />
+              <div>
+                <span class="report-label">Proposta comercial</span>
+                <h2 id="outEmpresaNome">D+ CASA SHOP</h2>
+              </div>
+            </div>
+            <div class="report-company-info">
+              <p id="outEmpresaRazao">D MAIS CASA SHOP UTILIDADES E CONST EIRELI</p>
+              <p><span id="outEmpresaEndereco">R GENERAL OSÓRIO</span> · <span id="outEmpresaCidade">CÁCERES - MT</span></p>
+            </div>
+            <div class="report-meta">
+              <p><strong>CNPJ</strong><span id="outEmpresaCnpj">41.639.112/0001-74</span></p>
+              <p><strong>Inscr. Est.</strong><span id="outEmpresaIe">13.869.179-7</span></p>
+              <p><strong>Telefone</strong><span id="outEmpresaTelefone">65 - 99938-2720</span></p>
+            </div>
+          </div>
+
+          <div class="report-hero">
+            <div>
+              <span class="report-eyebrow">Orçamento luminotécnico</span>
+              <h1>Proposta de iluminação e equipamentos</h1>
+              <p>Documento organizado por ambiente, com imagens dos produtos, quantidades, valores unitários, subtotais e total geral da proposta.</p>
+            </div>
+            <div class="hero-total-card">
+              <span>Total geral</span>
+              <strong id="outTotalGeral">R$ 0,00</strong>
+              <small>Valor estimado conforme itens selecionados</small>
+            </div>
+          </div>
+
+          <div class="report-info-grid">
+            <div class="info-card wide">
+              <span>Cliente</span>
+              <strong id="outClienteNome">CLIENTE TESTE</strong>
+              <small>Endereço: <span id="outClienteEndereco"></span></small>
+            </div>
+            <div class="info-card">
+              <span>Pagamento</span>
+              <strong id="outPagamento">À COMBINAR</strong>
+            </div>
+            <div class="info-card">
+              <span>Validade</span>
+              <strong id="outValidade">10 DIAS</strong>
+            </div>
+            <div class="info-card">
+              <span>Entrega</span>
+              <strong id="outEntrega">ATÉ DE 25 À 30 DIAS ÚTEIS</strong>
+            </div>
+          </div>
+
+          <div class="report-section-title">
+            <div>
+              <span>Resumo dos ambientes</span>
+              <h2>Visão geral da proposta</h2>
+            </div>
+          </div>
+          <div class="environment-summary" id="outResumoAmbientes"></div>
+          <div class="page-number"></div>
+        </section>
+
+        <section class="report-page report-details">
+          <div class="report-page-header">
+            <div>
+              <span>Detalhamento técnico-comercial</span>
+              <h2>Itens por ambiente</h2>
+            </div>
+            <img src="assets/img/logo_mvp.svg" alt="Logo" />
+          </div>
+          <div class="environment-list" id="orcamentoBody"></div>
+          <div class="page-number"></div>
+        </section>
+
+        <section class="report-page report-closing">
+          <div class="closing-box">
+            <span>Resumo final</span>
+            <h2>Condições da proposta</h2>
+            <div class="closing-total">
+              <small>Total geral da proposta</small>
+              <strong id="outTotalGeralResumo">R$ 0,00</strong>
+            </div>
+            <div class="closing-conditions">
+              <div>
+                <span>Validade da proposta</span>
+                <strong id="outValidadeResumo">10 DIAS</strong>
+              </div>
+              <div>
+                <span>Condição de pagamento</span>
+                <strong id="outCondicaoPagamento">À COMBINAR</strong>
+              </div>
+              <div>
+                <span>Entrega</span>
+                <strong id="outEntregaResumo">ATÉ DE 25 À 30 DIAS ÚTEIS</strong>
+              </div>
+            </div>
+            <div class="closing-observations" id="outObservacaoBox">
+              <span>Observações gerais</span>
+              <p id="outObservacaoGeral"></p>
+            </div>
+            <p class="closing-note">Esta proposta apresenta os equipamentos selecionados por ambiente, com valores organizados para facilitar a análise e aprovação do cliente.</p>
+            <div class="page-number"></div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="assets/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="160" viewBox="0 0 240 160">
+  <rect width="240" height="160" fill="#f7f7f7"/>
+  <path d="M65 48 Q120 33 175 48 L175 96 Q120 115 65 96 Z" fill="#cda77a" stroke="#8d6a45" stroke-width="4"/>
+  <ellipse cx="120" cy="96" rx="54" ry="17" fill="#ffe9b1" opacity="0.9"/>
+  <path d="M65 48 Q120 62 175 48" fill="none" stroke="#b88f62" stroke-width="3"/>
+  <text x="120" y="146" text-anchor="middle" font-family="Arial" font-size="14" fill="#333">PLAFON CÚPULA LINHO</text>
+</svg>

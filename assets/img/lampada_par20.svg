@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="160" viewBox="0 0 240 160">
+  <rect width="240" height="160" fill="#f7f7f7"/>
+  <ellipse cx="120" cy="58" rx="45" ry="22" fill="#f1f1f1" stroke="#cfcfcf" stroke-width="4"/>
+  <path d="M78 58 C82 93, 96 108, 120 108 C144 108,158 93,162 58 Z" fill="#ffffff" stroke="#d5d5d5" stroke-width="4"/>
+  <rect x="101" y="108" width="38" height="25" rx="4" fill="#d9d9d9" stroke="#aaa"/>
+  <line x1="103" y1="114" x2="137" y2="114" stroke="#999" stroke-width="3"/>
+  <line x1="103" y1="121" x2="137" y2="121" stroke="#999" stroke-width="3"/>
+  <text x="120" y="150" text-anchor="middle" font-family="Arial" font-size="14" fill="#333">LÂMPADA PAR20 3000K</text>
+</svg>
