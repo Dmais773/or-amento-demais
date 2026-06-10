@@ -18,3 +18,6 @@ Versão ajustada do sistema Orçamento Dmais.
    - README.md
 3. Aguarde o GitHub Pages atualizar.
 
+
+## Atualização v16
+- Incluído texto institucional de apresentação da D+ Casa Shop na capa da proposta/PDF.

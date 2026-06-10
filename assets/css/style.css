@@ -1847,3 +1847,59 @@ button:hover {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* Ajuste v16: texto institucional na capa da proposta */
+.cover-intro-box {
+  max-width: 680px;
+  margin: -8px 0 24px;
+  padding: 22px 24px;
+  border: 1px solid #dfe9e3;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(245, 158, 11, .12), transparent 34%),
+    linear-gradient(180deg, rgba(255,255,255,.96), rgba(248, 251, 249, .96));
+  box-shadow: 0 14px 34px rgba(19, 35, 26, .08);
+}
+
+.cover-intro-box > span {
+  display: inline-block;
+  color: var(--brand-green);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+}
+
+.cover-intro-box h3 {
+  margin: 7px 0 12px;
+  color: #102319;
+  font-size: 21px;
+  letter-spacing: -.25px;
+}
+
+.cover-intro-box p {
+  margin: 0 0 10px;
+  color: #4b5d52;
+  font-size: 12.6px;
+  line-height: 1.62;
+  text-align: justify;
+}
+
+.cover-intro-box p:last-child {
+  margin-bottom: 0;
+}
+
+@media print {
+  .cover-intro-box {
+    margin: -8mm 0 10mm;
+    padding: 8mm;
+    box-shadow: none;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .cover-intro-box p {
+    font-size: 10.2pt;
+    line-height: 1.48;
+  }
+}
