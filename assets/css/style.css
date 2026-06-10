@@ -1776,3 +1776,74 @@ button:hover {
     box-shadow: none;
   }
 }
+
+/* Ajuste v15: primeira página apenas de apresentação; valores e condições no fechamento */
+.report-hero.cover-only {
+  grid-template-columns: 1fr;
+  margin: 42px 0 34px;
+}
+
+.report-hero.cover-only h1 {
+  max-width: 620px;
+  font-size: 38px;
+}
+
+.report-hero.cover-only p {
+  max-width: 610px;
+  font-size: 14px;
+}
+
+.cover-client-grid {
+  grid-template-columns: 1.25fr 1fr;
+  max-width: 680px;
+}
+
+.presentation-note strong {
+  font-size: 13.5px;
+}
+
+.closing-summary-block {
+  margin-top: 22px;
+}
+
+.closing-summary-block > span {
+  display: inline-block;
+  color: var(--brand-green);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+}
+
+.closing-summary-block h3 {
+  margin: 6px 0 12px;
+  color: #102319;
+  font-size: 18px;
+  letter-spacing: -.25px;
+}
+
+.closing-summary {
+  grid-template-columns: repeat(2, 1fr);
+  margin-bottom: 18px;
+}
+
+.closing-summary .summary-card {
+  background: #ffffff;
+}
+
+@media (max-width: 1180px) {
+  .cover-client-grid,
+  .closing-summary { grid-template-columns: 1fr; }
+}
+
+@media print {
+  .report-hero.cover-only {
+    margin: 24mm 0 18mm;
+  }
+  .cover-client-grid {
+    grid-template-columns: 1.25fr 1fr;
+  }
+  .closing-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

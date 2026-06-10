@@ -229,46 +229,26 @@
             </div>
           </div>
 
-          <div class="report-hero">
+          <div class="report-hero cover-only">
             <div>
               <span class="report-eyebrow">Orçamento luminotécnico</span>
               <h1>Proposta de iluminação e equipamentos</h1>
-              <p>Documento organizado por ambiente, com imagens dos produtos, quantidades, valores unitários, subtotais e total geral da proposta.</p>
-            </div>
-            <div class="hero-total-card">
-              <span>Total geral</span>
-              <strong id="outTotalGeral">R$ 0,00</strong>
-              <small>Valor estimado conforme itens selecionados</small>
+              <p>Documento de apresentação da proposta, organizado para facilitar a análise técnica e visual dos itens selecionados.</p>
             </div>
           </div>
 
-          <div class="report-info-grid">
+          <div class="report-info-grid cover-client-grid">
             <div class="info-card wide">
               <span>Cliente</span>
               <strong id="outClienteNome">NÃO INFORMADO</strong>
               <small>Endereço: <span id="outClienteEndereco"></span></small>
             </div>
-            <div class="info-card">
-              <span>Pagamento</span>
-              <strong id="outPagamento">À COMBINAR</strong>
-            </div>
-            <div class="info-card">
-              <span>Validade</span>
-              <strong id="outValidade">10 DIAS</strong>
-            </div>
-            <div class="info-card">
-              <span>Entrega</span>
-              <strong id="outEntrega">ATÉ DE 25 À 30 DIAS ÚTEIS</strong>
+            <div class="info-card presentation-note">
+              <span>Apresentação</span>
+              <strong>Proposta técnica-comercial</strong>
+              <small>Condições comerciais reunidas apenas no fechamento da proposta.</small>
             </div>
           </div>
-
-          <div class="report-section-title">
-            <div>
-              <span>Resumo dos ambientes</span>
-              <h2>Visão geral da proposta</h2>
-            </div>
-          </div>
-          <div class="environment-summary" id="outResumoAmbientes"></div>
           <div class="page-number"></div>
         </section>
 
@@ -288,6 +268,11 @@
           <div class="closing-box">
             <span>Resumo final</span>
             <h2>Condições da proposta</h2>
+            <div class="closing-summary-block">
+              <span>Resumo dos ambientes</span>
+              <h3>Valores por ambiente</h3>
+              <div class="environment-summary closing-summary" id="outResumoAmbientes"></div>
+            </div>
             <div class="closing-total">
               <small>Total geral da proposta</small>
               <strong id="outTotalGeralResumo">R$ 0,00</strong>
