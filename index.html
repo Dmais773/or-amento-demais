@@ -28,7 +28,7 @@
         <button class="btn-secondary" id="resetSenhaBtn">Esqueci a senha</button>
       </div>
       <div id="authMsg" class="auth-msg"></div>
-      <p class="small-note">Os dados de cada conta ficam separados no Firebase. Cada usuário vê apenas seus próprios orçamentos.</p>
+      <p class="small-note">Os orçamentos ficam separados por conta. O catálogo de equipamentos é gerenciado pela conta ADM da loja.</p>
     </div>
   </section>
 
@@ -44,6 +44,7 @@
         </div>
         <div class="user-box">
           <span>Logado: <strong id="userEmail">-</strong></span>
+          <span class="role-badge user" id="adminBadge">Usuário comum</span>
           <button class="btn-secondary btn-small" id="logoutBtn">Sair</button>
         </div>
       </div>
@@ -110,6 +111,7 @@
 
       <section class="form-section">
         <h3>2. Adicionar item ao orçamento</h3>
+        <p class="small-note" id="catalogRoleNote">Carregando permissões do catálogo...</p>
         <div class="form-group">
           <label for="ambiente">Ambiente</label>
           <input id="ambiente" list="ambientesLista" value="" placeholder="Ex: GARAGEM, SALA, COZINHA" />
@@ -147,7 +149,7 @@
           <button class="btn-primary" id="adicionarItem">Adicionar item</button>
           <button class="btn-danger" id="limparOrcamento">Limpar orçamento</button>
         </div>
-        <div class="button-row product-delete-actions">
+        <div class="button-row product-delete-actions hidden" id="productDeleteActions">
           <button class="btn-delete-product-main" id="excluirEquipamentoSelecionado" disabled>Excluir equipamento selecionado</button>
         </div>
         <div class="items-list" id="listaItens"></div>
@@ -162,8 +164,9 @@
         </div>
       </section>
 
-      <section class="form-section">
-        <h3>4. Cadastro rápido de produto</h3>
+      <section class="form-section hidden" id="adminProductSection">
+        <h3>4. Cadastro de equipamentos do catálogo global</h3>
+        <p class="small-note">Área exclusiva da conta ADM. Produtos cadastrados aqui aparecem para todas as contas.</p>
         <div class="form-group">
           <label for="novoProdutoNome">Nome do equipamento</label>
           <input id="novoProdutoNome" placeholder="Ex: ARANDELA LED PRETA 3000K" />
@@ -181,7 +184,7 @@
         <div class="form-group">
           <label for="novoProdutoImagem">Imagem do produto</label>
           <input id="novoProdutoImagem" type="file" accept="image/*" />
-          <p class="small-note">Nesta versão, imagens pequenas podem ser salvas junto do produto no Firestore. Como o Storage não foi ativado, evite imagens pesadas.</p>
+          <p class="small-note">A imagem fica salva no catálogo global do Firestore. Como o Storage não foi ativado, use imagens leves.</p>
         </div>
         <div class="button-row">
           <button class="btn-success" id="salvarProduto">Salvar produto</button>
@@ -190,7 +193,7 @@
 
       <section class="form-section">
         <h3>5. Histórico de orçamentos</h3>
-        <p class="small-note">Mostra os últimos 30 orçamentos salvos nesta conta.</p>
+        <p class="small-note">Mostra os últimos 30 orçamentos salvos somente nesta conta.</p>
         <div class="button-row">
           <button class="btn-primary" id="salvarHistorico">Salvar orçamento atual</button>
           <button class="btn-outline" id="novoOrcamento">Novo orçamento</button>

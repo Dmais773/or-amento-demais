@@ -34,6 +34,8 @@ const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
 
+const ADMIN_EMAIL = "orcamentodmais@gmail.com";
+
 const DEFAULT_PRODUCTS = [];
 const DEFAULT_ITEMS = [];
 
@@ -71,6 +73,10 @@ function normalizeText(value) {
 
 function normalizeSearch(value) {
   return normalizeText(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function isAdminUser() {
+  return String(currentUser?.email || "").trim().toLowerCase() === ADMIN_EMAIL;
 }
 
 function escapeHtml(value) {
@@ -124,7 +130,7 @@ function friendlyFirebaseError(error) {
 }
 
 function produtosCol() {
-  return collection(db, "usuarios", currentUser.uid, "produtos");
+  return collection(db, "catalogoGlobal", "principal", "produtos");
 }
 
 function orcamentosCol() {
@@ -211,8 +217,8 @@ function loadDraftLocal() {
 async function loadProductsFromFirestore() {
   const snap = await getDocs(query(produtosCol(), orderBy("nome")));
 
-  // Versão zerada: não cria equipamentos de exemplo automaticamente.
-  // Cada conta começa vazia e os equipamentos cadastrados ficam salvos no Firestore da própria conta.
+  // Catálogo global: todos os usuários leem a mesma lista de equipamentos.
+  // Apenas a conta ADM pode cadastrar, editar ou excluir produtos.
   produtos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
@@ -358,7 +364,10 @@ function renderProductSuggestions(term) {
   const results = getSearchResults(term, 12);
 
   if (!results.length) {
-    box.innerHTML = `<div class="suggestion-empty">Nenhum equipamento encontrado.</div>`;
+    const emptyMessage = isAdminUser()
+      ? "Nenhum equipamento encontrado. Cadastre um novo produto na área de ADM."
+      : "Nenhum equipamento encontrado. O catálogo global ainda não possui este item.";
+    box.innerHTML = `<div class="suggestion-empty">${emptyMessage}</div>`;
     box.classList.add("show");
     return;
   }
@@ -419,11 +428,12 @@ function updateSelectedProduct() {
   `;
 
   const deleteButton = $("excluirEquipamentoSelecionado");
-  if (deleteButton) deleteButton.disabled = false;
+  if (deleteButton) deleteButton.disabled = !isAdminUser();
 }
 
 async function deleteSelectedProduct() {
   if (!currentUser) return alert("Faça login para excluir equipamento.");
+  if (!isAdminUser()) return alert("Apenas a conta ADM pode excluir equipamentos do catálogo global.");
 
   const product = getProduct($("produtoSelect").value);
   if (!product) return alert("Selecione um equipamento para excluir.");
@@ -443,17 +453,13 @@ async function deleteSelectedProduct() {
     produtos = produtos.filter((p) => p.id !== product.id);
     hideProductSuggestions();
 
-    if (produtos.length) {
-      selectProduct(produtos[0].id, false);
-    } else {
-      $("produtoBusca").value = "";
-      $("produtoSelect").value = "";
-      $("precoUnitario").value = "0.00";
-      updateSelectedProduct();
-    }
+    $("produtoBusca").value = "";
+    $("produtoSelect").value = "";
+    $("precoUnitario").value = "0.00";
+    updateSelectedProduct();
 
     renderAll();
-    setStatus("Equipamento excluído do cadastro.", "success");
+    setStatus("Equipamento excluído do catálogo global.", "success");
   } catch (error) {
     console.error(error);
     setStatus(friendlyFirebaseError(error), "error");
@@ -893,12 +899,13 @@ function readImageAsDataUrl(file) {
 }
 
 async function saveProduct() {
+  if (!isAdminUser()) return alert("Apenas a conta ADM pode cadastrar equipamentos no catálogo global.");
+
   const nome = normalizeText($("novoProdutoNome").value);
   const unidade = normalizeText($("novoProdutoUnidade").value || "UND");
   const preco = onlyNumber($("novoProdutoPreco").value);
   const file = $("novoProdutoImagem").files[0];
 
-  if (!currentUser) return alert("Faça login para cadastrar produto.");
   if (!nome) return alert("Informe o nome do produto.");
   if (preco <= 0) return alert("Informe o preço unitário.");
 
@@ -920,7 +927,7 @@ async function saveProduct() {
 
     selectProduct(novoProduto.id);
     renderAll();
-    setStatus("Produto salvo no Firestore.", "success");
+    setStatus("Produto salvo no catálogo global.", "success");
   } catch (error) {
     console.error(error);
     alert(error.message || friendlyFirebaseError(error));
@@ -930,6 +937,7 @@ async function saveProduct() {
 
 async function resetProducts() {
   if (!currentUser) return;
+  if (!isAdminUser()) return alert("Apenas a conta ADM pode restaurar produtos.");
   if (!confirm("Restaurar a lista original de produtos? Os produtos cadastrados por você serão removidos.")) return;
 
   try {
@@ -1055,6 +1063,33 @@ async function logout() {
   await signOut(auth);
 }
 
+
+function applyRoleUi() {
+  const admin = isAdminUser();
+
+  const adminBadge = $("adminBadge");
+  if (adminBadge) {
+    adminBadge.textContent = admin ? "ADM do catálogo global" : "Usuário comum";
+    adminBadge.classList.toggle("admin", admin);
+    adminBadge.classList.toggle("user", !admin);
+  }
+
+  const adminSection = $("adminProductSection");
+  if (adminSection) adminSection.classList.toggle("hidden", !admin);
+
+  const deleteActions = $("productDeleteActions");
+  if (deleteActions) deleteActions.classList.toggle("hidden", !admin);
+
+  const catalogNote = $("catalogRoleNote");
+  if (catalogNote) {
+    catalogNote.textContent = admin
+      ? "Você está usando a conta ADM. Os equipamentos cadastrados, editados ou excluídos aqui aparecem para todas as contas."
+      : "Você está usando o catálogo global da loja. Os equipamentos são gerenciados pela conta ADM.";
+  }
+
+  updateSelectedProduct();
+}
+
 function bindEvents() {
   $("loginBtn").addEventListener("click", login);
   $("criarContaBtn").addEventListener("click", createAccount);
@@ -1108,16 +1143,18 @@ async function bootUser(user) {
   $("authScreen").classList.add("hidden");
   $("appShell").classList.remove("hidden");
   $("userEmail").textContent = user.email || "usuário";
-  setStatus("Carregando dados da conta...", "info");
+  applyRoleUi();
+  setStatus("Carregando catálogo global e dados da conta...", "info");
 
   try {
     await loadProductsFromFirestore();
     loadDraftLocal();
     renderProductOptions();
+    applyRoleUi();
 
     await loadHistory();
     renderAll();
-    setStatus("Sistema pronto.", "success");
+    setStatus(isAdminUser() ? "Sistema pronto. Modo ADM ativo." : "Sistema pronto. Catálogo global carregado.", "success");
   } catch (error) {
     console.error(error);
     setStatus(friendlyFirebaseError(error), "error");

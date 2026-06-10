@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == "orcamentodmais@gmail.com";
+    }
+
+    // Catálogo global de equipamentos da loja.
+    // Todos os usuários logados podem ler.
+    // Somente o ADM pode criar, editar ou excluir.
+    match /catalogoGlobal/{catalogoId}/produtos/{produtoId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Orçamentos continuam independentes por usuário.
+    match /usuarios/{userId}/{document=**} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+  }
+}
