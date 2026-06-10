@@ -1707,3 +1707,72 @@ button:hover {
   }
   @page { size: A4; margin: 0; }
 }
+
+/* Ajuste v14: subtotal abaixo dos itens e total geral no fechamento da lista de produtos */
+.environment-card-head {
+  grid-template-columns: 1fr;
+}
+
+.premium-table tfoot td {
+  padding: 12px 8px;
+  border-top: 1px solid #dfe9e3;
+  border-bottom: 0;
+  background: #f7faf8;
+}
+
+.environment-subtotal-row td:first-child {
+  text-align: right;
+  color: #5f6b63;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.environment-subtotal-row .col-total {
+  color: var(--brand-green-dark);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.details-grand-total {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.details-grand-total > div {
+  min-width: 300px;
+  padding: 18px 22px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--brand-green-dark), var(--brand-green));
+  color: #fff;
+  box-shadow: 0 16px 34px rgba(15, 95, 44, .18);
+}
+
+.details-grand-total span {
+  display: block;
+  color: rgba(255,255,255,.76);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+}
+
+.details-grand-total strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+@media print {
+  .details-grand-total {
+    margin-top: 14px;
+  }
+  .details-grand-total > div {
+    box-shadow: none;
+  }
+}

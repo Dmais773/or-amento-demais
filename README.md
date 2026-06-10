@@ -1,22 +1,20 @@
-# Orçamento Dmais
+# Orçamento Dmais - v14
 
-Sistema web para gerar orçamentos com login, cadastro de equipamentos, imagens, histórico e impressão/salvamento em PDF pelo navegador.
+Versão ajustada do sistema Orçamento Dmais.
 
-## Versão v12 - zerada
+## Ajustes desta versão
 
-Esta versão começa sem equipamentos de exemplo e sem orçamento carregado.
+- Subtotal do ambiente movido para baixo da tabela de produtos, alinhado abaixo da coluna de valores totais.
+- Total geral da proposta adicionado ao final da listagem de produtos, no fechamento da última página de itens.
+- Mantida a correção para evitar erro de documento maior que 1 MB no Firestore: os orçamentos salvos guardam dados leves dos itens, sem duplicar imagens pesadas.
+- Mantida a versão zerada, sem produtos de exemplo automáticos.
 
-- Cada conta começa vazia.
-- O cliente cadastra os próprios equipamentos.
-- Produtos, fotos e orçamentos ficam salvos no Firestore, separados por usuário.
-- As imagens cadastradas ficam salvas junto ao produto no Firestore em base64.
-- O GitHub guarda apenas o código do sistema, não os dados cadastrados.
-- O PDF é gerado pelo navegador ao clicar em Imprimir / Salvar PDF.
+## Como publicar no GitHub Pages
 
-## Firebase
+1. Extraia este ZIP.
+2. Envie para o repositório os arquivos e pastas extraídos, incluindo:
+   - index.html
+   - assets/
+   - README.md
+3. Aguarde o GitHub Pages atualizar.
 
-Projeto configurado: `orcamento-dmais`
-
-## Observação
-
-Como o Firebase Storage não está ativado, use imagens pequenas nos equipamentos.

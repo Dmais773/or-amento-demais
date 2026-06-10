@@ -37,7 +37,7 @@ const db = getFirestore(firebaseApp);
 const DEFAULT_PRODUCTS = [];
 const DEFAULT_ITEMS = [];
 
-const STORAGE_ITEMS = "orcamento_dmais_itens_v12_zerado_total";
+const STORAGE_ITEMS = "orcamento_dmais_itens_v13_sem_imagem_no_orcamento";
 const STORAGE_FIELDS = "orcamento_dmais_campos_v12_zerado_total";
 const FIELD_IDS = [
   "empresaNome", "empresaRazao", "empresaCnpj", "empresaIe", "empresaCidade",
@@ -117,6 +117,9 @@ function friendlyFirebaseError(error) {
     "auth/wrong-password": "Senha incorreta.",
     "permission-denied": "Sem permissão no banco. Confira as regras do Firestore."
   };
+  if (String(error?.message || "").includes("exceeds the maximum allowed size")) {
+    return "O orçamento ficou grande demais para salvar porque continha muitas imagens. Atualize para a versão v13: ela salva apenas os dados dos itens e usa as imagens do cadastro de produtos.";
+  }
   return map[code] || error?.message || "Ocorreu um erro.";
 }
 
@@ -148,6 +151,31 @@ function calculateTotal(items = itens) {
   return items.reduce((sum, item) => sum + onlyNumber(item.quantidade) * onlyNumber(item.preco), 0);
 }
 
+function sanitizeQuoteItem(item) {
+  const product = getProduct(item.produtoId);
+  return {
+    id: item.id || newId("item"),
+    ambiente: normalizeText(item.ambiente),
+    produtoId: item.produtoId || "",
+    nome: item.nome || product?.nome || "PRODUTO REMOVIDO",
+    unidade: item.unidade || product?.unidade || "UND",
+    quantidade: onlyNumber(item.quantidade),
+    preco: onlyNumber(item.preco ?? product?.preco)
+  };
+}
+
+function sanitizeQuoteItems(items = itens) {
+  return items.map(sanitizeQuoteItem);
+}
+
+function estimatePayloadSizeInBytes(payload) {
+  try {
+    return new Blob([JSON.stringify(payload)]).size;
+  } catch {
+    return 0;
+  }
+}
+
 function hydrateItem(item) {
   const product = getProduct(item.produtoId);
   return {
@@ -155,14 +183,14 @@ function hydrateItem(item) {
     id: item.id || newId("item"),
     nome: item.nome || product?.nome || "PRODUTO REMOVIDO",
     unidade: item.unidade || product?.unidade || "UND",
-    imagem: item.imagem || product?.imagem || "assets/img/sem_imagem.svg",
+    imagem: product?.imagem || item.imagem || "assets/img/sem_imagem.svg",
     preco: onlyNumber(item.preco ?? product?.preco)
   };
 }
 
 function saveDraftLocal() {
   if (!currentUser || isBootingUser) return;
-  localStorage.setItem(userLocalKey(STORAGE_ITEMS), JSON.stringify(itens));
+  localStorage.setItem(userLocalKey(STORAGE_ITEMS), JSON.stringify(sanitizeQuoteItems(itens)));
   localStorage.setItem(userLocalKey(STORAGE_FIELDS), JSON.stringify(getFieldsObject()));
 }
 
@@ -209,11 +237,17 @@ async function saveQuoteToHistory() {
     setStatus("Salvando orçamento...", "info");
     const payload = {
       campos: getFieldsObject(),
-      itens: itens.map(hydrateItem),
+      itens: sanitizeQuoteItems(itens),
       totalGeral: calculateTotal(),
       clienteNome: $("clienteNome").value || "SEM CLIENTE",
-      atualizadoEm: serverTimestamp()
+      atualizadoEm: serverTimestamp(),
+      versaoSalvamento: "v13_sem_imagens_nos_itens"
     };
+
+    const payloadSize = estimatePayloadSizeInBytes(payload);
+    if (payloadSize > 900 * 1024) {
+      throw new Error("Este orçamento ainda ficou grande demais para salvar no Firestore. Remova textos muito extensos ou reduza a quantidade de itens.");
+    }
 
     if (loadedQuoteId) {
       await setDoc(doc(orcamentosCol(), loadedQuoteId), payload, { merge: true });
@@ -689,7 +723,7 @@ function renderQuote() {
   let totalItens = 0;
 
   if (!itens.length) {
-    html = `<div class="empty-report">Adicione itens no painel ao lado ou carregue o exemplo para montar a proposta.</div>`;
+    html = `<div class="empty-report">Adicione itens no painel ao lado para montar a proposta.</div>`;
     summaryHtml = `<div class="summary-empty">Nenhum ambiente adicionado ainda.</div>`;
   } else {
     grouped.forEach((envItems, ambiente) => {
@@ -730,10 +764,6 @@ function renderQuote() {
               <span>Ambiente</span>
               <h3>${escapeHtml(ambiente)}</h3>
             </div>
-            <div class="environment-subtotal">
-              <span>Subtotal</span>
-              <strong>${toMoney(subtotal)}</strong>
-            </div>
           </div>
           <table class="premium-table">
             <thead>
@@ -747,10 +777,27 @@ function renderQuote() {
               </tr>
             </thead>
             <tbody>${rows}</tbody>
+            <tfoot>
+              <tr class="environment-subtotal-row">
+                <td colspan="5">Subtotal do ambiente</td>
+                <td class="col-total">${toMoney(subtotal)}</td>
+              </tr>
+            </tfoot>
           </table>
         </section>
       `;
     });
+  }
+
+  if (itens.length) {
+    html += `
+      <div class="details-grand-total">
+        <div>
+          <span>Total geral da proposta</span>
+          <strong>${toMoney(totalGeral)}</strong>
+        </div>
+      </div>
+    `;
   }
 
   body.innerHTML = html;
